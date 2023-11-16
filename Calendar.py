@@ -1,61 +1,61 @@
-import datetime
 import PySimpleGUI as sg
+import calendar
 
 
-def get_calendar_text(year, month):
-    try:
-        year = int(year)
-        month = int(month)
-        cal = datetime.date(year, month, 1)
-    except ValueError:
-        sg.popup_error("Введіть коректні значення року і місяця.")
-        return None
+def create_calendar(year, month):
+    # Створення календаря за вказаний рік і місяць
+    cal = calendar.monthcalendar(year, month)
+    header = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд']
+    rows = []
 
-    calendar_text = f"Календар на {cal.strftime('%B')} {year}:\n"
-    calendar_text += "{:2s} {:2s} {:2s} {:2s} {:2s} {:2s} {:2s}".format(
-        "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд\n")
+    for week in cal:
+        row = []
+        for day in week:
+            if day == 0:
+                # Замінюємо 0 на порожню строку для днів, що не належать поточному місяцю
+                row.append('')
+            else:
+                row.append(str(day))
+        rows.append(row)
 
-    start_day = datetime.date(year, month, 1)
-    offset = start_day.weekday()
-    days_in_month = (datetime.date(year + 1, 1, 1) if month ==
-                     12 else datetime.date(year, month + 1, 1) - start_day).days
-
-    current_line = " " * 3 * offset
-    for day in range(1, days_in_month + 1):
-        current_line += f"{day:2d} "
-        if (day + offset) % 7 == 0:
-            calendar_text += current_line + "\n"
-            current_line = ""
-    return calendar_text
+    # Повертаємо двовимірний список з заголовками та даними календаря
+    return [header] + rows
 
 
-def program():
+def main():
+    # Задаємо макет графічного інтерфейсу
     layout = [
-        [sg.Text("Введіть рік:"), sg.InputText(key="year")],
-        [sg.Text("Введіть місяць (1-12):"), sg.InputText(key="month")],
-        [sg.Button("Показати календар"), sg.Button("Вийти")],
-        [sg.Output(size=(30, 10), key="output")],
+        [sg.Text('Оберіть рік та місяць')],
+        [sg.InputCombo([str(year) for year in range(2010, 2030)], default_value='2023', key='year'),
+         sg.InputCombo([str(month) for month in range(1, 13)],
+                       default_value='1', key='month'),
+         sg.Button('Показати календар')],
+        [sg.Table(values=[], headings=['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
+                  auto_size_columns=False, justification='right', num_rows=6, key='calendar')],
+        [sg.Button('Вихід')]
     ]
 
-    window = sg.Window("Календар", layout)
+    # Створюємо вікно із заданим макетом
+    window = sg.Window('Календар', layout, resizable=True)
 
     while True:
+        # Зчитуємо події та значення елементів інтерфейсу
         event, values = window.read()
 
-        if event == sg.WIN_CLOSED or event == "Вийти":
+        # Виходимо з циклу при закритті вікна або натисканні кнопки "Exit"
+        if event == sg.WINDOW_CLOSED or event == 'Вихід':
             break
+        elif event == 'Показати календар':
+            # Обробляємо натискання кнопки "Show Calendar"
+            year = int(values['year'])
+            month = int(values['month'])
+            cal_data = create_calendar(year, month)
+            # Оновлюємо значення таблиці вікна
+            window['calendar'].update(values=cal_data[1:])
 
-        if event == "Показати календар":
-            year = values["year"]
-            month = values["month"]
-            window["output"].update("")
-
-            calendar_text = get_calendar_text(year, month)
-            if calendar_text:
-                window["output"].update(calendar_text)
-
+    # Закриваємо вікно
     window.close()
 
 
-if __name__ == "__main__":
-    program()
+if __name__ == '__main__':
+    main()
